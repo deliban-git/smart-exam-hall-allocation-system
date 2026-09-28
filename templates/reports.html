@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h2 style="margin:0">FULL ALLOCATION REPORT ({{ rows|length }} students allocated)</h2>
+    <button class="btn btn-purple no-print" onclick="window.print()">{{ icons.printer(15) }} Print</button>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Hall</th><th>Building</th><th>Seat No.</th><th>Reg No.</th><th>Name</th><th>Department</th><th>Exam</th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.hall_no }}</td>
+      <td>{{ r.building }}</td>
+      <td>{{ r.seat_no }}</td>
+      <td>{{ r.reg_no }}</td>
+      <td>{{ r.name }}</td>
+      <td>{{ r.department }}</td>
+      <td>{{ r.exam_name }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+
+{% endblock %}

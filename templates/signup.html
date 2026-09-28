@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up | Smart Exam Hall Allocation System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% import '_icons.html' as icons %}
+
+<div class="auth-wrapper">
+  <div class="auth-blob blob-1"></div>
+  <div class="auth-blob blob-2"></div>
+  <div class="auth-blob blob-3"></div>
+
+  <div class="auth-card">
+    <div class="auth-logo">{{ icons.personAdd(24) }}</div>
+    <h1>Create COE Account</h1>
+    <p class="sub">Sign up your Controller of Examination (COE) office — you'll get your own, fully isolated database</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash flash-{{ 'success' if category=='success' else 'error' }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" id="signupForm">
+      <label>College / COE Name</label>
+      <input type="text" name="institution_name" required placeholder="e.g. ABC Engineering College - COE">
+      <label>Your Name</label>
+      <input type="text" name="full_name" required placeholder="e.g. Prithvi Amir">
+      <label>Username</label>
+      <input type="text" name="username" required minlength="3" placeholder="Choose a username">
+      <label>Password</label>
+      <div style="position:relative">
+        <input type="password" name="password" id="pw1" required minlength="6" placeholder="Min 6 chars, letter + number" style="width:100%">
+        <button type="button" onclick="togglePw('pw1')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted)">{{ icons.eye(16) }}</button>
+      </div>
+      <div id="pwStrength" style="font-size:12px;margin-top:4px;color:var(--text-muted)">At least 6 characters, with a letter and a number</div>
+      <label>Confirm Password</label>
+      <div style="position:relative">
+        <input type="password" name="confirm_password" id="pw2" required placeholder="Re-enter password" style="width:100%">
+        <button type="button" onclick="togglePw('pw2')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted)">{{ icons.eye(16) }}</button>
+      </div>
+      <button class="btn btn-green" type="submit" id="signupBtn">Create Account</button>
+    </form>
+
+    <div class="auth-switch">
+      Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePw(id){
+  const f = document.getElementById(id);
+  f.type = (f.type === 'password') ? 'text' : 'password';
+}
+const pw1 = document.getElementById('pw1');
+const hint = document.getElementById('pwStrength');
+pw1.addEventListener('input', function(){
+  const v = pw1.value;
+  const ok = v.length >= 6 && /[A-Za-z]/.test(v) && /\d/.test(v);
+  hint.style.color = v.length === 0 ? 'var(--text-muted)' : (ok ? '#1e9e5a' : '#d64545');
+  hint.innerText = ok ? 'Looks good' : 'At least 6 characters, with a letter and a number';
+});
+document.getElementById('signupForm').addEventListener('submit', function(){
+  const btn = document.getElementById('signupBtn');
+  btn.disabled = true;
+  btn.innerText = 'Creating account...';
+});
+</script>
+
+</body>
+</html>

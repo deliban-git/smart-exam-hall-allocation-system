@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Exam Management{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="card">
+  <h2>ADD EXAM</h2>
+  <form method="POST" class="grid-3">
+    <div>
+      <label>Exam Name</label>
+      <input type="text" name="exam_name" required placeholder="DBMS - Internal Test">
+    </div>
+    <div>
+      <label>Department</label>
+      <input type="text" name="department" required placeholder="CSE">
+    </div>
+    <div>
+      <label>Exam Date</label>
+      <input type="text" name="exam_date" required placeholder="30-05-2025">
+    </div>
+    <div>
+      <label>Exam Time</label>
+      <input type="text" name="exam_time" required placeholder="10:00 AM">
+    </div>
+    <div>
+      <label>Duration</label>
+      <input type="text" name="duration" required placeholder="3 hrs">
+    </div>
+    <div style="align-self:end">
+      <button class="btn btn-green" type="submit">{{ icons.plus(15) }} Add Exam</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>ALL EXAMS ({{ exams|length }})</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Exam Name</th><th>Department</th><th>Date</th><th>Time</th><th>Duration</th><th></th></tr>
+    {% for e in exams %}
+    <tr>
+      <td>{{ e.exam_name }}</td>
+      <td>{{ e.department }}</td>
+      <td>{{ e.exam_date }}</td>
+      <td>{{ e.exam_time }}</td>
+      <td>{{ e.duration }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('delete_exam', exam_id=e.exam_id) }}" onsubmit="return confirm('Remove this exam?');">
+          <button class="btn btn-red" style="padding:5px 10px;font-size:12px" type="submit">{{ icons.trash(13) }} Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+
+{% endblock %}

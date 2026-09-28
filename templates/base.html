@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Smart Exam Hall Allocation System{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% import '_icons.html' as icons %}
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">{{ icons.cap(22) }}</div>
+    <div class="titles">
+      <h1><span class="title-full">SMART EXAM HALL ALLOCATION SYSTEM</span><span class="title-short">EHAS</span></h1>
+      <p>Automated Hall &amp; Seat Allocation</p>
+    </div>
+  </div>
+  <div class="admin">
+    <button type="button" class="profile-btn" id="profileToggle" aria-label="Profile menu">
+      <div class="avatar">{{ icons.user(18) }}</div>
+      <span class="admin-text">{{ current_user or 'Admin' }}<br><small style="opacity:.7">{{ current_institution or 'Administrator' }}</small></span>
+    </button>
+    <div class="profile-menu" id="profileMenu">
+      <a href="{{ url_for('profile') }}">{{ icons.user(14) }} Edit Profile</a>
+      <div class="profile-menu-divider"></div>
+      <a class="logout-link" href="{{ url_for('logout') }}">{{ icons.logout(14) }} Logout</a>
+    </div>
+    <button class="hamburger" id="menuToggle" aria-label="Toggle menu">{{ icons.menu(20) }}</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span>{{ icons.cap(18) }} Menu</span>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">{{ icons.close(18) }}</button>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' }}">{{ icons.dashboard() }} Dashboard</a>
+    <a href="{{ url_for('students') }}" class="{{ 'active' if request.endpoint=='students' }}">{{ icons.students() }} Student Management</a>
+    <a href="{{ url_for('exams') }}" class="{{ 'active' if request.endpoint=='exams' }}">{{ icons.exams() }} Exam Management</a>
+    <a href="{{ url_for('halls') }}" class="{{ 'active' if request.endpoint=='halls' }}">{{ icons.halls() }} Hall Management</a>
+    <a href="{{ url_for('seat_allocation') }}" class="{{ 'active' if request.endpoint=='seat_allocation' }}">{{ icons.seat() }} Seat Allocation</a>
+    <a href="{{ url_for('allocation_view') }}" class="{{ 'active' if request.endpoint=='allocation_view' }}">{{ icons.chart() }} Allocation View</a>
+    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint=='reports' }}">{{ icons.report() }} Reports</a>
+    <a href="{{ url_for('search_student') }}" class="{{ 'active' if request.endpoint=='search_student' }}">{{ icons.search() }} Search Student</a>
+    <a href="{{ url_for('logout') }}">{{ icons.logout() }} Logout</a>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <div class="content" id="mainContent">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash flash-{{ 'success' if category=='success' else 'error' }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<div id="pageScripts">{% block scripts %}{% endblock %}</div>
+
+<script>
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+  function openDrawer() {
+    sidebar.classList.add('open');
+    sidebarBackdrop.classList.add('open');
+    document.body.classList.add('sidebar-open');
+  }
+  function closeDrawer() {
+    sidebar.classList.remove('open');
+    sidebarBackdrop.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
+  }
+  if (menuToggle) {
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.contains('open') ? closeDrawer() : openDrawer();
+    });
+  }
+  sidebarBackdrop.addEventListener('click', closeDrawer);
+  window.addEventListener('resize', () => { if (window.innerWidth > 900) closeDrawer(); });
+
+  const profileToggle = document.getElementById('profileToggle');
+  const profileMenu = document.getElementById('profileMenu');
+
+  function closeProfileMenu() { if (profileMenu) profileMenu.classList.remove('show'); }
+
+  if (profileToggle && profileMenu) {
+    profileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileMenu.classList.toggle('show');
+    });
+    document.addEventListener('click', (e) => {
+      if (!profileMenu.contains(e.target) && !profileToggle.contains(e.target)) {
+        closeProfileMenu();
+      }
+    });
+  }
+</script>
+
+<script>
+// ---- AJAX navigation: swap #mainContent instead of doing a full page reload ----
+(function () {
+  const mainContent = document.getElementById('mainContent');
+  const sidebarEl = document.getElementById('sidebar');
+
+  function runPageScripts() {
+    const container = document.getElementById('pageScripts');
+    const scripts = Array.from(container.querySelectorAll('script'));
+    container.innerHTML = '';
+    scripts.forEach(old => {
+      const s = document.createElement('script');
+      if (old.src) { s.src = old.src; }
+      else { s.textContent = old.textContent; }
+      container.appendChild(s);
+    });
+  }
+
+  async function loadPage(url, push) {
+    document.body.classList.add('page-loading');
+    try {
+      const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!res.ok) { window.location.href = url; return; }
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const newMain = doc.getElementById('mainContent');
+      const newSidebar = doc.getElementById('sidebar');
+      const newPageScripts = doc.getElementById('pageScripts');
+
+      if (!newMain) { window.location.href = url; return; } // not an app page (e.g. login) -> real navigation
+
+      document.title = doc.title;
+      mainContent.innerHTML = newMain.innerHTML;
+      if (newSidebar) sidebarEl.innerHTML = newSidebar.innerHTML;
+      if (newPageScripts) document.getElementById('pageScripts').innerHTML = newPageScripts.innerHTML;
+
+      runPageScripts();
+      mainContent.style.animation = 'none';
+      void mainContent.offsetWidth; // force reflow so the animation restarts
+      mainContent.style.animation = '';
+      if (push) history.pushState({ url }, '', url);
+      closeDrawer();
+      closeProfileMenu();
+      window.scrollTo(0, 0);
+    } catch (err) {
+      window.location.href = url; // fall back to a normal reload if anything goes wrong
+    } finally {
+      document.body.classList.remove('page-loading');
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    const link = e.target.closest('#sidebar a, .profile-menu a');
+    if (!link) {
+      if (e.target.closest('.sidebar-close')) { closeDrawer(); }
+      return;
+    }
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#')) return;
+    if (href.indexOf('/logout') !== -1) return; // let logout do a real redirect
+    const url = new URL(href, window.location.origin);
+    if (url.origin !== window.location.origin) return;
+    if (url.pathname === window.location.pathname) { e.preventDefault(); closeDrawer(); closeProfileMenu(); return; }
+    e.preventDefault();
+    loadPage(url.pathname + url.search, true);
+  });
+
+  window.addEventListener('popstate', function () {
+    loadPage(window.location.pathname + window.location.search, false);
+  });
+})();
+</script>
+</body>
+</html>

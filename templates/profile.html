@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="card" style="max-width:480px">
+  <h2>{{ icons.user(16) }} EDIT PROFILE</h2>
+  <p style="color:var(--text-muted); font-size:13px; margin-top:-6px;">
+    Update your name, username, or password. Leave the password fields blank to keep your current password.
+  </p>
+
+  <form method="POST">
+    <label>Full Name</label>
+    <input type="text" name="full_name" required value="{{ user.full_name or '' }}" placeholder="Administrator">
+
+    <label>Username</label>
+    <input type="text" name="username" required value="{{ user.username }}" placeholder="admin">
+
+    <label>New Password</label>
+    <input type="password" name="new_password" placeholder="Leave blank to keep current password" autocomplete="new-password">
+
+    <label>Confirm New Password</label>
+    <input type="password" name="confirm_password" placeholder="Re-enter new password" autocomplete="new-password">
+
+    <div class="action-row" style="margin-top:6px">
+      <button class="btn btn-blue" type="submit">{{ icons.check(15) }} Save Changes</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="max-width:480px">
+  <h2>ACCOUNT INFO</h2>
+  <div class="student-info-box" style="margin-top:0">
+    <div class="row"><div><div class="lbl">College / COE</div><div class="val">{{ user.institution_name }}</div></div></div>
+    <div class="row"><div><div class="lbl">Account Created</div><div class="val">{{ user.created_at }}</div></div></div>
+    <div class="row"><div><div class="lbl">Last Login</div><div class="val">{{ user.last_login_at or 'This is your first login' }}</div></div></div>
+  </div>
+  <p style="color:var(--text-muted); font-size:12px; margin-top:10px;">
+    Your COE has its own private database — no other college using this system can see or affect your halls, students or seat allocations.
+  </p>
+</div>
+
+{% endblock %}

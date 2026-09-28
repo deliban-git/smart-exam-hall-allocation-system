@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Seat Allocation{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="grid-3">
+  <!-- STUDENT SEARCH -->
+  <div class="card">
+    <h2>STUDENT SEARCH</h2>
+    <label>Register Number</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="regNoInput" placeholder="23CSE078">
+      <button class="btn btn-blue" onclick="searchStudent()">{{ icons.search(15) }} Search</button>
+    </div>
+    <div id="studentBox"></div>
+  </div>
+
+  <!-- HALL DETAILS -->
+  <div class="card">
+    <h2>HALL DETAILS</h2>
+    <label>Select Hall</label>
+    <select id="hallSelect" onchange="loadHall()">
+      {% for h in halls %}
+      <option value="{{ h.hall_id }}" {{ 'selected' if h.hall_id==selected_hall_id else '' }}>{{ h.hall_no }}</option>
+      {% endfor %}
+    </select>
+    <div id="hallDetailsBox" class="student-info-box"></div>
+  </div>
+
+  <!-- BENCH LOCATION GUIDE -->
+  <div class="card">
+    <h2>BENCH LOCATION GUIDE</h2>
+    <p><span class="legend-box" style="background:var(--left-bg);border:1px solid var(--left-border)"></span> LEFT SIDE (Windows)</p>
+    <p><span class="legend-box" style="background:var(--centre-bg);border:1px solid var(--centre-border)"></span> CENTRE</p>
+    <p><span class="legend-box" style="background:var(--right-bg);border:1px solid var(--right-border)"></span> RIGHT SIDE (Lift Side)</p>
+  </div>
+</div>
+
+<div class="alloc-layout">
+
+  <!-- SEATING LAYOUT -->
+  <div class="card">
+    <h2 id="seatingTitle">SEATING LAYOUT</h2>
+    <div class="hall-front">FRONT (BLACKBOARD / SCREEN)</div>
+    <div class="table-wrap" id="seatGrid"></div>
+
+    <div class="seat-legend">
+      <span><span class="legend-box" style="background:var(--left-bg);border:1px solid var(--left-border)"></span>Left Side (Windows)</span>
+      <span><span class="legend-box" style="background:var(--centre-bg);border:1px solid var(--centre-border)"></span>Centre</span>
+      <span><span class="legend-box" style="background:var(--right-bg);border:1px solid var(--right-border)"></span>Right Side (Lift Side)</span>
+      <span><span class="legend-box" style="background:#d7dbe4;border:1px solid #b6bccb"></span>Occupied</span>
+    </div>
+
+    <div class="stat-strip" id="statStrip"></div>
+
+    <div class="action-row no-print">
+      <button class="btn btn-green" onclick="autoAllocate()">{{ icons.bolt(16) }} Auto Allocate Seats</button>
+      <button class="btn btn-blue" onclick="loadHall()">{{ icons.refresh(16) }} Refresh List</button>
+      <button class="btn btn-purple" onclick="window.print()">{{ icons.printer(16) }} Download / Print</button>
+      <button class="btn btn-red" onclick="clearAll()">{{ icons.trash(16) }} Clear All</button>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div>
+    <div class="card">
+      <h2>OCCUPATION SPACE (CUSTOMIZE)</h2>
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        Enable Occupation Space
+        <label class="switch"><input type="checkbox" id="enableOcc" checked><span class="slider"></span></label>
+      </label>
+      <label>How many students per bench? (Max: 4)</label>
+      <input type="number" id="perBench" min="1" max="4" value="2">
+      <label>Your Comment (for list)</label>
+      <textarea id="occComment" rows="3" maxlength="200" placeholder="e.g. 2 per bench"></textarea>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-green" onclick="autoAllocate()">Apply &amp; Generate List</button>
+        <button class="btn btn-outline" onclick="resetOcc()">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>OCCUPATION LIST <span id="perBenchLabel"></span></h2>
+      <div class="table-wrap">
+        <table id="occTable">
+          <tr><th>Seat No.</th><th>Reg No.</th><th>Student Name</th></tr>
+        </table>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px">
+        <b>Note:</b> You can change the number of students per bench and regenerate the list anytime.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+var currentHallId = {{ selected_hall_id or 'null' }};
+
+var ICONS = {
+  seat:  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M6 16V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8"/><path d="M4 16h16v3a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-.8L16 18H8l-.5 1.2a1 1 0 0 1-1 .8H5a1 1 0 0 1-1-1v-3Z"/></svg>`,
+  user:  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>`,
+  check: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M20 6 9 17l-5-5"/></svg>`,
+  left:  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>`,
+  dot:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-3px"><circle cx="12" cy="12" r="5"/></svg>`,
+  right: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`,
+};
+
+function el(id){ return document.getElementById(id); }
+
+async function searchStudent(){
+  const reg = el('regNoInput').value.trim();
+  if(!reg){ return; }
+  const res = await fetch(`/api/student/${reg}`);
+  const data = await res.json();
+  const box = el('studentBox');
+  if(!data.found){
+    box.innerHTML = `<div class="student-info-box">No student found for "${reg}".</div>`;
+    return;
+  }
+  let seatInfo = data.seat
+    ? `Seat ${data.seat.seat_no} (${data.seat.side}) — ${data.seat.hall_no}`
+    : "Not yet allocated";
+  box.innerHTML = `
+    <div class="student-info-box">
+      <div class="row"><div><div class="lbl">Student Name</div><div class="val">${data.name}</div></div></div>
+      <div class="row">
+        <div><div class="lbl">Department</div><div class="val">${data.department}</div></div>
+        <div><div class="lbl">Year / Section</div><div class="val">${data.year_section}</div></div>
+      </div>
+      <div class="row"><div><div class="lbl">Exam</div><div class="val">${data.exam_name}</div></div></div>
+      <div class="row"><div><div class="lbl">Date &amp; Time</div><div class="val">${data.exam_date} | ${data.exam_time}</div></div></div>
+      <div class="row"><div><div class="lbl">Seat Allocation</div><div class="val">${seatInfo}</div></div></div>
+    </div>`;
+}
+
+function seatSideClass(side){
+  if(side === 'LEFT') return 'seat-left';
+  if(side === 'CENTRE') return 'seat-centre';
+  return 'seat-right';
+}
+
+function renderSeatGrid(hallData){
+  const seats = hallData.seats;
+  const bySide = {LEFT: [], CENTRE: [], RIGHT: []};
+  seats.forEach(s => bySide[s.side].push(s));
+
+  const rows = Math.max(bySide.LEFT.length, bySide.CENTRE.length, bySide.RIGHT.length) / 4;
+
+  let html = `<div class="seat-columns">
+    <div><div class="seat-side-label side-left-label">LEFT SIDE (Windows)</div><div id="colLeft"></div></div>
+    <div><div class="seat-side-label side-centre-label">CENTRE</div><div id="colCentre"></div></div>
+    <div><div class="seat-side-label side-right-label">RIGHT SIDE (Lift Side)</div><div id="colRight"></div></div>
+    <div class="lift-side">LIFT SIDE</div>
+  </div>`;
+  el('seatGrid').innerHTML = html;
+
+  ['LEFT','CENTRE','RIGHT'].forEach(side => {
+    const arr = bySide[side];
+    const target = el('col' + side.charAt(0) + side.slice(1).toLowerCase());
+    let out = '';
+    for(let r=0; r<rows; r++){
+      out += '<div class="seat-row">';
+      for(let c=0; c<4; c++){
+        const s = arr[r*4+c];
+        if(!s){ out += '<div></div>'; continue; }
+        const occ = s.reg_no ? 'seat-occupied' : seatSideClass(side);
+        const title = s.reg_no ? `${s.seat_no}: ${s.reg_no}` : s.seat_no;
+        out += `<div class="seat ${occ}" title="${title}">${s.seat_no}</div>`;
+      }
+      out += '</div>';
+    }
+    target.innerHTML = out;
+  });
+}
+
+async function loadHall(){
+  const hallId = el('hallSelect').value;
+  currentHallId = hallId;
+  const res = await fetch(`/api/hall/${hallId}`);
+  const data = await res.json();
+  if(!data.found) return;
+
+  el('seatingTitle').innerText = `SEATING LAYOUT - ${data.hall.hall_no}`;
+  el('hallDetailsBox').innerHTML = `
+    <div class="row"><div><div class="lbl">Hall No</div><div class="val">${data.hall.hall_no}</div></div></div>
+    <div class="row"><div><div class="lbl">Capacity</div><div class="val">${data.hall.capacity}</div></div></div>
+    <div class="row">
+      <div><div class="lbl">Floor</div><div class="val">${data.hall.floor}</div></div>
+      <div><div class="lbl">Building</div><div class="val">${data.hall.building}</div></div>
+    </div>`;
+
+  el('perBench').value = data.hall.per_bench;
+  el('perBenchLabel').innerText = `(${data.hall.per_bench} PER BENCH)`;
+
+  renderSeatGrid(data);
+
+  const perSide = data.total / 3;
+  el('statStrip').innerHTML = `
+    <div class="stat-item">${ICONS.seat} Total Seats<br><b>${data.total}</b></div>
+    <div class="stat-item">${ICONS.user} Occupied<br><b>${data.occupied}</b></div>
+    <div class="stat-item">${ICONS.check} Available<br><b>${data.available}</b></div>
+    <div class="stat-item">${ICONS.left} Left Side<br><b>${perSide}</b></div>
+    <div class="stat-item">${ICONS.dot} Centre<br><b>${perSide}</b></div>
+    <div class="stat-item">${ICONS.right} Right Side<br><b>${perSide}</b></div>`;
+
+  loadOccupationList();
+}
+
+async function loadOccupationList(){
+  if(!currentHallId) return;
+  const res = await fetch(`/api/occupation-list/${currentHallId}`);
+  const data = await res.json();
+  el('perBenchLabel').innerText = `(${data.per_bench} PER BENCH)`;
+  let html = '<tr><th>Seat No.</th><th>Reg No.</th><th>Student Name</th></tr>';
+  data.rows.forEach(r => {
+    html += `<tr><td>${r.seat_range}</td><td>${r.reg_no}</td><td>${r.name}</td></tr>`;
+  });
+  if(data.rows.length === 0){
+    html += '<tr><td colspan="3" style="color:var(--text-muted)">No allocations yet. Click "Auto Allocate Seats".</td></tr>';
+  }
+  el('occTable').innerHTML = html;
+}
+
+async function autoAllocate(){
+  if(!currentHallId){ alert('Select a hall first.'); return; }
+  const perBench = parseInt(el('perBench').value) || 2;
+  const comment = el('occComment').value;
+  const res = await fetch('/api/allocate', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({hall_id: currentHallId, per_bench: perBench, comment: comment})
+  });
+  const data = await res.json();
+  await loadHall();
+  alert(`Allocated ${data.allocated} of ${data.total_students} students.`);
+}
+
+async function clearAll(){
+  if(!currentHallId) return;
+  if(!confirm('Clear all seat allocations for this hall?')) return;
+  await fetch(`/api/clear/${currentHallId}`, {method: 'POST'});
+  await loadHall();
+}
+
+function resetOcc(){
+  el('perBench').value = 2;
+  el('occComment').value = '';
+}
+
+el('regNoInput').addEventListener('keydown', e => { if(e.key === 'Enter') searchStudent(); });
+
+if(currentHallId){ loadHall(); }
+</script>
+{% endblock %}

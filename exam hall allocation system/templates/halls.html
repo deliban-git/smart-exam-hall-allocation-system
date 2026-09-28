@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Hall Management{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="card">
+  <h2>ADD HALL</h2>
+  <form method="POST" class="grid-4">
+    <div>
+      <label>Hall No</label>
+      <input type="text" name="hall_no" required placeholder="HALL - 03">
+    </div>
+    <div>
+      <label>Capacity (multiple of 12)</label>
+      <input type="number" name="capacity" min="12" step="12" required placeholder="72">
+    </div>
+    <div>
+      <label>Floor</label>
+      <input type="text" name="floor" required placeholder="Ground Floor">
+    </div>
+    <div>
+      <label>Building</label>
+      <input type="text" name="building" required placeholder="Block A">
+    </div>
+    <div style="align-self:end">
+      <button class="btn btn-green" type="submit">{{ icons.plus(15) }} Add Hall &amp; Generate Seats</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>ALL HALLS ({{ halls|length }})</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Hall No</th><th>Building</th><th>Floor</th><th>Capacity</th><th>Per Bench</th><th></th></tr>
+    {% for h in halls %}
+    <tr>
+      <td>{{ h.hall_no }}</td>
+      <td>{{ h.building }}</td>
+      <td>{{ h.floor }}</td>
+      <td>{{ h.capacity }}</td>
+      <td>{{ h.per_bench }}</td>
+      <td style="display:flex;gap:8px">
+        <a class="btn btn-blue" style="padding:5px 10px;font-size:12px" href="{{ url_for('seat_allocation', hall_id=h.hall_id) }}">Allocate</a>
+        <form method="POST" action="{{ url_for('delete_hall', hall_id=h.hall_id) }}" onsubmit="return confirm('Delete this hall and all its seats?');">
+          <button class="btn btn-red" style="padding:5px 10px;font-size:12px" type="submit">{{ icons.trash(13) }} Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+
+{% endblock %}

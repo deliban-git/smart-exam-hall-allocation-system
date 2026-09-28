@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Build output
+dist/
+build/
+out/
+.next/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Java
+*.class
+target/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Test coverage
+coverage/

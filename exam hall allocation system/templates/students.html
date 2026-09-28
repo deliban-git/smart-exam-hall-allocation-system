@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Student Management{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="card">
+  <h2>ADD STUDENT</h2>
+  <form method="POST" class="grid-3">
+    <div>
+      <label>Register Number</label>
+      <input type="text" name="reg_no" required placeholder="23CSE078">
+    </div>
+    <div>
+      <label>Student Name</label>
+      <input type="text" name="name" required placeholder="PRITHVI AMIR">
+    </div>
+    <div>
+      <label>Department</label>
+      <input type="text" name="department" required placeholder="CSE">
+    </div>
+    <div>
+      <label>Year / Section</label>
+      <input type="text" name="year_section" required placeholder="IV / A">
+    </div>
+    <div>
+      <label>Exam Name</label>
+      <input type="text" name="exam_name" required placeholder="DBMS - Internal Test">
+    </div>
+    <div>
+      <label>Exam Date</label>
+      <input type="text" name="exam_date" required placeholder="30-05-2025">
+    </div>
+    <div>
+      <label>Exam Time</label>
+      <input type="text" name="exam_time" required placeholder="10:00 AM">
+    </div>
+    <div style="align-self:end">
+      <button class="btn btn-green" type="submit">{{ icons.plus(15) }} Add Student</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>ALL STUDENTS ({{ students|length }})</h2>
+  <div class="table-wrap">
+  <table>
+    <tr>
+      <th>Reg No</th><th>Name</th><th>Dept</th><th>Year/Sec</th><th>Exam</th><th>Date</th><th>Time</th><th></th>
+    </tr>
+    {% for s in students %}
+    <tr>
+      <td>{{ s.reg_no }}</td>
+      <td>{{ s.name }}</td>
+      <td>{{ s.department }}</td>
+      <td>{{ s.year_section }}</td>
+      <td>{{ s.exam_name }}</td>
+      <td>{{ s.exam_date }}</td>
+      <td>{{ s.exam_time }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('delete_student', reg_no=s.reg_no) }}" onsubmit="return confirm('Remove this student?');">
+          <button class="btn btn-red" style="padding:5px 10px;font-size:12px" type="submit">{{ icons.trash(13) }} Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+
+{% endblock %}

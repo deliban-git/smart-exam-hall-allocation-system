@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Search Student{% endblock %}
+{% block content %}
+{% import '_icons.html' as icons %}
+
+<div class="card" style="max-width:520px">
+  <h2>SEARCH STUDENT</h2>
+  <label>Register Number</label>
+  <div style="display:flex;gap:8px">
+    <input type="text" id="regNoInput" placeholder="23CSE078">
+    <button class="btn btn-blue" onclick="go()">{{ icons.search(15) }} Search</button>
+  </div>
+  <div id="studentBox"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function el(id){ return document.getElementById(id); }
+
+async function go(){
+  const reg = el('regNoInput').value.trim();
+  if(!reg) return;
+  const res = await fetch(`/api/student/${reg}`);
+  const data = await res.json();
+  const box = el('studentBox');
+  if(!data.found){
+    box.innerHTML = `<div class="student-info-box">No student found for "${reg}".</div>`;
+    return;
+  }
+  let seatInfo = data.seat
+    ? `Seat ${data.seat.seat_no} (${data.seat.side}) — ${data.seat.hall_no}`
+    : "Not yet allocated";
+  box.innerHTML = `
+    <div class="student-info-box">
+      <div class="row"><div><div class="lbl">Student Name</div><div class="val">${data.name}</div></div></div>
+      <div class="row">
+        <div><div class="lbl">Department</div><div class="val">${data.department}</div></div>
+        <div><div class="lbl">Year / Section</div><div class="val">${data.year_section}</div></div>
+      </div>
+      <div class="row"><div><div class="lbl">Exam</div><div class="val">${data.exam_name}</div></div></div>
+      <div class="row"><div><div class="lbl">Date &amp; Time</div><div class="val">${data.exam_date} | ${data.exam_time}</div></div></div>
+      <div class="row"><div><div class="lbl">Seat Allocation</div><div class="val">${seatInfo}</div></div></div>
+    </div>`;
+}
+el('regNoInput').addEventListener('keydown', e => { if(e.key === 'Enter') go(); });
+</script>
+{% endblock %}
